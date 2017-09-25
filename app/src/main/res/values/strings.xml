@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">施工写真台帳</string>
+    <string name="action_settings">PDF出力</string>
+    <string name="action_reset">リセット</string>
+</resources>
