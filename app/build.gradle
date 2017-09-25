@@ -38,5 +38,6 @@ dependencies {
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.itextpdf:itextg:5.5.10'
-    compile 'com.itextpdf:itext-asian:5.2.0'
+    //compile 'com.itextpdf:itext-asian:5.2.0'
+    compile files('libs/iTextAsian.jar')
 }
