@@ -4,6 +4,7 @@ apply plugin: 'realm-android'
 android {
     compileSdkVersion 26
     buildToolsVersion "26.0.1"
+
     defaultConfig {
         applicationId "jp.martydog.construction_photograph_ledger"
         minSdkVersion 19
@@ -23,6 +24,7 @@ android {
     }
 }
 
+
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
@@ -38,6 +40,6 @@ dependencies {
     compile 'com.madgag.spongycastle:pkix:1.54.0.0'
     compile 'com.madgag.spongycastle:pg:1.54.0.0'
     compile 'com.itextpdf:itextg:5.5.10'
-    //compile 'com.itextpdf:itext-asian:5.2.0'
-    compile files('libs/iTextAsian.jar')
+    compile 'com.itextpdf:itext-asian:5.2.0'
+    //compile files('libs/iTextAsian.jar')
 }
