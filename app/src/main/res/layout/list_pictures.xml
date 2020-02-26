@@ -12,10 +12,11 @@
 
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="160dp"
         android:id="@+id/textView"
         android:hint="施工内容"
         android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/imageView"/>
+        android:layout_toEndOf="@+id/imageView"
+        android:layout_alignBottom="@+id/imageView" />
 
 </RelativeLayout>

@@ -12,12 +12,18 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Font;
@@ -29,15 +35,19 @@ import com.itextpdf.text.pdf.PdfTextArray;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.Security;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
+import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
@@ -55,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
     };
     private ListView listView;
     private ListAdapter listAdapter;
+    private List<String> siteList = new ArrayList<>(); //現場取得のためのメンバ変数
+    private TextView textView;
 
     static {
         Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
@@ -64,6 +76,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        AdView adView = (AdView)this.findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // パーミッションの許可状態を確認する
@@ -93,8 +109,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        realm = Realm.getDefaultInstance();
+        RealmConfiguration config1 = new RealmConfiguration.Builder()
+                .name("default1.realm")
+                .schemaVersion(2)
+                .migration(new Migration())
+                .build();
+
+
+        realm = realm.getDefaultInstance();
         realm.addChangeListener(realmChangeListener);
+
 
         listAdapter = new ListAdapter(MainActivity.this);
         listView = (ListView) findViewById(R.id.listView);
@@ -144,6 +168,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         reloadListView();
+
+        if (siteList != null) {
+            for (String str : siteList) {
+                Log.d("test", str);
+            }
+        }
     }
 
     private void reloadListView() {
@@ -157,8 +187,14 @@ public class MainActivity extends AppCompatActivity {
 
         RealmResults<Picture> realmResults = realm.where(Picture.class).findAllSorted("id", Sort.ASCENDING);
 
+        if (realmResults.isEmpty()) {
+            Toast toast = Toast.makeText(getBaseContext(), "データがありません", Toast.LENGTH_SHORT);
+            toast.show();
+            return;
+        }
+
         File pdfFolder = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS), "pdfdemo");
+                Environment.DIRECTORY_DOWNLOADS), "施工管理台帳");
         if (!pdfFolder.exists()) {
             pdfFolder.mkdir();
             Log.d(LOG_TAG, "Pdf Directory created");
@@ -260,6 +296,24 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void getNewSite() {
+        textView = (TextView) findViewById(R.id.siteName);
+        LayoutInflater factory = LayoutInflater.from(this);
+        final View inputView = factory.inflate(R.layout.activity_dialog, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("現場名を入力してくだい")
+                .setView(inputView)
+                .setPositiveButton("登録", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                    // ボタンをクリックしたときの動作
+                        EditText editText = (EditText) inputView.findViewById(R.id.dialogEditText);
+                        String str = editText.getText().toString();
+                        textView.setText(str);
+                    }
+                });
+        builder.show();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -289,10 +343,12 @@ public class MainActivity extends AppCompatActivity {
             } catch (DocumentException e) {
                 e.printStackTrace();
             }
-        } else {
+        } else if (id == R.id.action_reset) {
             realm.beginTransaction();
             realm.deleteAll();
             realm.commitTransaction();
+        } else if (id == R.id.action_createSite) {
+            getNewSite();
         }
 
         return super.onOptionsItemSelected(item);
@@ -303,6 +359,12 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case PERMISSIONS_REQUEST_CODE:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                } else {
+
+                    Toast toast = Toast.makeText(this, "許可状態でないと、このアプリは使用できません。", Toast.LENGTH_SHORT);
+                    toast.show();
+                    this.finish();
+
                 }
                 break;
             default:

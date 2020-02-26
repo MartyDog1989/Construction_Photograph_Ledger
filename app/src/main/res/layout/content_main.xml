@@ -8,9 +8,25 @@
     tools:context="jp.martydog.construction_photograph_ledger.MainActivity"
     tools:showIn="@layout/activity_main">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/siteName"/>
+
     <ListView
         android:id="@+id/listView"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"/>
+
+    <com.google.android.gms.ads.AdView
+        xmlns:ads="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/adView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        ads:adUnitId="ca-app-pub-1687922088750848/3936182416"
+        ads:adSize="BANNER" />
 
 </RelativeLayout>

@@ -17,16 +17,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public class InputActivity extends AppCompatActivity {
@@ -38,6 +41,9 @@ public class InputActivity extends AppCompatActivity {
     private Button button;
     private Uri mPictureUri;
     private Picture picture;
+    private int picId;
+    private Realm realm;
+    private RealmManager realmManager = new RealmManager();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,18 +53,24 @@ public class InputActivity extends AppCompatActivity {
         editText = (EditText) findViewById(R.id.editText);
         imageView = (ImageView) findViewById(R.id.imageView);
         button = (Button) findViewById(R.id.button);
-
         Intent intent = getIntent();
-        int picId = intent.getIntExtra(MainActivity.EXTRA_PIC, -1);
-        Realm realm = Realm.getDefaultInstance();
+        picId = intent.getIntExtra(MainActivity.EXTRA_PIC, -1);
+        /*
+        RealmConfiguration config2 = new RealmConfiguration.Builder()
+                .name("default1.realm")
+                .schemaVersion(2)
+                .migration(new Migration())
+                .build();
+        */
+        realm = realm.getDefaultInstance();
         picture = realm.where(Picture.class).equalTo("id", picId).findFirst();
         realm.close();
 
-        if(picId != -1) {
+        if (picId != -1) {
             editText.setText(picture.getText());
             Bitmap bmp = null;
             byte[] bytes = picture.getBitmapArray();
-            if(bytes != null) {
+            if (bytes != null) {
                 bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             }
             imageView.setImageBitmap(bmp);
@@ -88,11 +100,17 @@ public class InputActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // キーボードが出てたら閉じる
-                InputMethodManager im = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                InputMethodManager im = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 im.hideSoftInputFromWindow(v.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
                 addPicture();
-                finish();
+                if (picture.getBitmapArray() == null) {
+                    Toast toast = Toast.makeText(getBaseContext(), "写真を選択してください", Toast.LENGTH_SHORT);
+                    toast.show();
+                    showChooser();
+                } else {
+                    finish();
+                }
             }
         });
 
@@ -132,7 +150,7 @@ public class InputActivity extends AppCompatActivity {
             Matrix matrix = new Matrix();
             matrix.postScale(scale, scale);
 
-            Bitmap resizedImage =  Bitmap.createBitmap(image, 0, 0, imageWidth, imageHeight, matrix, true);
+            Bitmap resizedImage = Bitmap.createBitmap(image, 0, 0, imageWidth, imageHeight, matrix, true);
 
             // BitmapをImageViewに設定する
             imageView.setImageBitmap(resizedImage);
@@ -140,16 +158,46 @@ public class InputActivity extends AppCompatActivity {
             mPictureUri = null;
         }
     }
+/*
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+
+            Toast toast = Toast.makeText(getBaseContext(), "写真を選択してください", Toast.LENGTH_SHORT);
+            toast.show();
+            showChooser();
+
+            finish();
+            return false;
+
+
+        }
+        return super.onKeyDown(keyCode, event);
+    };
+*/
+
+    @Override
+    public void onBackPressed() {
+        BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
+
+        if (drawable == null || picId != -1) {
+            finish();
+
+        } else {
+            Toast toast = Toast.makeText(getBaseContext(), "入力完了を押してください", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+    }
 
     private void addPicture() {
         Realm realm = Realm.getDefaultInstance();
         realm.beginTransaction();
 
-        if(picture == null) {
+        if (picture == null) {
             picture = new Picture();
             RealmResults<Picture> realmResults = realm.where(Picture.class).findAll();
             int identifier;
-            if(realmResults.max("id") != null) {
+            if (realmResults.max("id") != null) {
                 identifier = realmResults.max("id").intValue() + 1;
             } else {
                 identifier = 0;
@@ -157,8 +205,6 @@ public class InputActivity extends AppCompatActivity {
             picture.setId(identifier);
         }
 
-        String text = editText.getText().toString();
-        picture.setText(text);
 
         // 添付画像を取得する
         BitmapDrawable drawable = (BitmapDrawable) imageView.getDrawable();
@@ -176,6 +222,15 @@ public class InputActivity extends AppCompatActivity {
             }
 
             picture.setBitmapArray(bytes);
+        }
+
+        if (drawable == null) {
+            realm.commitTransaction();
+            realm.close();
+            return;
+        } else {
+            String text = editText.getText().toString();
+            picture.setText(text);
         }
 
         realm.copyToRealmOrUpdate(picture);
